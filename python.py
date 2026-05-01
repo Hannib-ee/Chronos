@@ -13,6 +13,8 @@ actions = []
 replaying = False
 mouse_controls = MouseController()
 keyboard_control = KeyboardController()
+mouse_listener = None
+keyboard_listener = None
 
 def on_move(x, y):
     print(f"mouse moved to ({x}, {y})")
@@ -25,18 +27,22 @@ def on_click(x, y, button, pressed):
 
 def on_press(button):
     print(f"{button} pressed")
-    if button == keyboard.Key.esc:
-        return False
     actions.append(("press", button, time.time()))
 
 def start_recording():
-    actions.clear()
-    with mouse.Listener(on_click=on_click, on_move=on_move) as listener:
-        with keyboard.Listener(on_press=on_press) as listener:
-            listener.join()
+    global mouse_listener, keyboard_listener
+    mouse_listener = mouse.Listener(on_click=on_click, on_move=on_move)
+    keyboard_listener = keyboard.Listener(on_press=on_press)
+    mouse_listener.start()
+    keyboard_listener.start()
+    keyboard_listener.join()
     record_button.config(state="normal")
 
     print(actions)
+
+def stop_recording():
+    mouse_listener.stop()
+    keyboard_listener.stop()
 
 def replay():
     while replaying:
@@ -81,7 +87,9 @@ def on_activate():
     print("Replay Stopped")
 
 hotkey = keyboard.GlobalHotKeys({
-    '<ctrl>+<shift>+s': on_activate
+    '<ctrl>+<shift>+s': on_activate,
+    '<ctrl>+<shift>+r': start_recording_thread,
+    '<ctrl>+<shift>+e': stop_recording
 })
 hotkey.start()
 
